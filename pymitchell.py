@@ -20,10 +20,6 @@ import sqlite3
 
 
 class AccountClass(object):
-    classDescription = None
-    accountType = None
-    classNumber = None
-
     def __init__(self, row):
         self.classDescription = row[3]
         self.accountType = row[9]
@@ -31,10 +27,6 @@ class AccountClass(object):
 
 
 class AltPartNo(object):
-    altPartNumber = None
-    partUnique = None
-    mfgCode = None
-
     def __init__(self, row):
         self.altPartNumber = row[0]
         self.partUnique = row[1]
@@ -42,31 +34,7 @@ class AltPartNo(object):
 
 
 class Order(object):
-    vendorCode = None
-    techSel = None
-    partConfirm = None
-    qty = None
-    cost = None
-    performed = None
-    accountclass = None
-    category = None
-    partNumber = None
-    description = None
-    techNumber = None
-    hoursPay = None
-    seqNo = None
-    price = None
-    hoursActual = None
-    estimateNumber = None
-    keyID = None
-    sale = None
-    listPrice = None
-    mfgCode = None
-    partUnique = None
-    hoursCharged = None
-    part = None
-
-    def __init__(self, row, Mitchell):
+    def __init__(self, row, mitch):
         self.vendorCode = row[0]
         self.techSel = row[2]
         self.partConfirm = row[4]
@@ -89,26 +57,11 @@ class Order(object):
         self.mfgCode = row[51]
         self.partUnique = row[52]
         self.hoursCharged = row[55]
-        self.part = Mitchell.searchPartNumber(self.partNumber, Mitchell)
+        self.part = mitch.searchPartNumber(self.partNumber, mitch)
+        self.tech = mitch.searchTechNumber(self.techNumber)
 
 
 class Vehicle(object):
-    vehicleID = None
-    make = None
-    owner = None
-    plate = None
-    model = None
-    vin = None
-    year = None
-    inspDate = None
-    engine = None
-    custID = None
-    subModel = None
-    license = None
-    memo = None
-    odometer1 = None
-    odometer2 = None
-
     def __init__(self, row):
         self.vehicleID = row[2]
         self.make = row[6]
@@ -128,44 +81,7 @@ class Vehicle(object):
 
 
 class History(object):
-    custID = None
-    promised = None
-    orderType = None
-    defaultTech = None
-    reasonForVisit = None
-    recordNumber = None
-    writer = None
-    laborAmount = None
-    odometerIn = None
-    odometerOut = None
-    datePosted = None
-    hazwasteAmount = None
-    location = None
-    timeIn = None
-    yearMakeModel = None
-    estimateNumber = None
-    status = None
-    balanceDue = None
-    estimateShopSupplies = None
-    sched = None
-    hazWaste = None
-    estLaborAmount = None
-    partsAmount = None
-    shopSupplies = None
-    writerNumber = None
-    shopSuppliesAmount = None
-    odometerOut = None
-    vehicleID = None
-    defaultTechParts = None
-    license = None
-    printedDate = None
-    estimateHazmat = None
-    estPartsAmount = None
-    timeOut = None
-    estimateHours = None
-    orders = []
-
-    def __init__(self, row, Mitchell):
+    def __init__(self, row, mitch):
         self.custID = row[8]
         self.promised = row[9]
         self.orderType = row[11]
@@ -200,28 +116,16 @@ class History(object):
         self.estPartsAmount = row[58]
         self.timeOut = row[59]
         self.estimateHours = row[63]
+        self.vehicle = mitch.searchVehicle(self.vehicleID)
         self.orders = []
-        getOrders = Mitchell.searchEstimate('_OrderList', self.estimateNumber)
+        self.tech = mitch.searchTechNumber(self.defaultTech)
+        getOrders = mitch.searchEstimate('_OrderList', self.estimateNumber)
         for order in getOrders:
-            self.orders.append(Order(order, Mitchell))
+            self.orders.append(Order(order, mitch))
 
 
 class Schedule(object):
-    sched = None
-    notes = None
-    datePosted = None
-    custName = None
-    custID = None
-    recordNumber = None
-    estimateNumber = None
-    category = None
-    custCompany = None
-    recordType = None
-    recordNumber = None
-    keyUnique = None
-    orders = []
-
-    def __init__(self, row, Mitchell):
+    def __init__(self, row, mitch):
         self.sched = row[2]
         self.notes = row[4]
         self.datePosted = row[5]
@@ -236,36 +140,12 @@ class Schedule(object):
         self.recordNumber = row[9]
         self.keyUnique = row[11]
         self.orders = []
-        getOrders = Mitchell.searchEstimate('_OrderList', self.estimateNumber)
+        getOrders = mitch.searchEstimate('_OrderList', self.estimateNumber)
         for order in getOrders:
-            self.orders.append(Order(order, Mitchell))
-
-
-class Manufacturer(object):
-    mfgName = None
-    mfgCode = None
-    mfgUnique = None
-
-    def __init__(self, row):
-        self.mfgName = row[0]
-        self.mfgCode = row[1]
-        self.mfgUnique = row[2]
+            self.orders.append(Order(order, mitch))
 
 
 class Part(object):
-    comment = None
-    tireSize = None
-    tireFlag = None
-    category = None
-    partNumber = None
-    cost = None
-    catList = None
-    mfgCode = None
-    description = None
-    listPrice = None
-    fixedListPrice = None
-    partUnique = None
-
     def __init__(self, row):
         self.comment = row[0]
         self.tireSize = row[1]
@@ -282,10 +162,6 @@ class Part(object):
 
 
 class Phone(object):
-    phoneNumber = None
-    extensionNumber = None
-    custID = None
-
     def __init__(self, row):
         self.phoneNumber = row[0]
         self.custID = row[2]
@@ -293,45 +169,7 @@ class Phone(object):
 
 
 class Status(object):
-    createdAsEstimateFlag = None
-    refNumber = None
-    custID = None
-    promised = None
-    orderType = None
-    defaultTech = None
-    reasonForVisit = None
-    recordNumber = None
-    writer = None
-    laborAmount = None
-    odometerIn = None
-    datePosted = None
-    custName = None
-    hazwasteAmount = None
-    location = None
-    timeIn = None
-    yearMakeModel = None
-    estimateNumber = None
-    status = None
-    balanceDue = None
-    estimateShopSupplies = None
-    sched = None
-    hazWaste = None
-    estLaborAmount = None
-    partsAmount = None
-    shopSupplies = None
-    writerNumber = None
-    shopSuppliesAmount = None
-    odometerOut = None
-    vehicleID = None
-    defaultTechParts = None
-    license = None
-    printedDate = None
-    estPartsAmount = None
-    timeOut = None
-    estimateHours = None
-    customer = None
-
-    def __init__(self, row, Mitchell):
+    def __init__(self, row, mitch):
         self.createdAsEstimateFlag = row[1]
         self.refNumber = row[7]
         self.custID = row[8]
@@ -368,86 +206,46 @@ class Status(object):
         self.estPartsAmount = row[58]
         self.timeOut = row[59]
         self.estimateHours = row[63]
-
-        custrows = Mitchell.searchUser('_Customers', self.custID)
+        self.tech = mitch.searchTechNumber(self.defaultTech)
+        self.vehicle = mitch.searchVehicle(self.vehicleID)
+        custrows = mitch.searchUser('_Customers', self.custID)
         if custrows:
-            self.customer = Customer(custrows[0], Mitchell)
+            self.customer = Customer(custrows[0], mitch)
         else:
             self.customer = None
 
 
 class Technician(object):
-    city = None
-    zipCode = None
-    lastName = None
-    state = None
-    firstName = None
-    phoneNumber = None
-    address = None
-    techNumber = None
-
     def __init__(self, row):
-        city = row[0]
-        zipCode = row[1]
-        lastName = row[2]
-        state = row[4]
-        firstName = row[7]
-        phoneNumber = row[10]
-        address = row[12]
-        techNumber = row[13]
+        self.city = row[0]
+        self.zipCode = row[1]
+        self.lastName = row[2]
+        self.state = row[4]
+        self.firstName = row[7]
+        self.phoneNumber = row[10]
+        self.address = row[12]
+        self.techNumber = row[13]
 
 
-class Vendors(object):
-    comment = None
-    extensionNumber2 = None
-    code = None
-    city = None
-    zipCode = None
-    state = None
-    extensionNumber1 = None
-    phoneNumber2 = None
-    phoneNumber1 = None
-    address = None
-    accountclass = None
-    name = None
-    contact = None
-
+class Vendor(object):
     def __init__(self, row):
-        comment = row[0]
-        extensionNumber2 = row[2]
-        code = row[3]
-        city = row[8]
-        zipCode = row[9]
-        state = row[12]
-        extensionNumber1 = row[16]
-        phoneNumber2 = row[17]
-        phoneNumber1 = row[18]
-        address = row[22]
-        accountclass = row[23]
-        name = row[25]
-        contact = row[26]
+        self.comment = row[0]
+        self.extensionNumber2 = row[2]
+        self.code = row[3]
+        self.city = row[8]
+        self.zipCode = row[9]
+        self.state = row[12]
+        self.extensionNumber1 = row[16]
+        self.phoneNumber2 = row[17]
+        self.phoneNumber1 = row[18]
+        self.address = row[22]
+        self.accountclass = row[23]
+        self.name = row[25]
+        self.contact = row[26]
 
 
 class Customer(object):
-    custID = None
-    lastVisited = None
-    balanceDue = None
-    city = None
-    zipCode = None
-    state = None
-    firstName = None
-    lastName = None
-    company = None
-    address = None
-    remarks = None
-    emailAddress = None
-
-    vehicles = []
-    history = []
-    phone = None
-    schedule = []
-
-    def __init__(self, row, Mitchell):
+    def __init__(self, row, mitch):
         self.custID = row[2]
         self.lastVisited = row[3]
         self.balanceDue = row[6]
@@ -460,29 +258,28 @@ class Customer(object):
         self.address = row[25]
         self.remarks = row[26]
         self.emailAddress = row[37]
-        self.phone = Phone(Mitchell.searchUser('_PhoneNum', self.custID)[0])
-
-    def getVehicles(self, Mitchell):
         self.vehicles = []
-        for vehicle in Mitchell.searchUser('_Vehicle', self.custID):
+        self.history = []
+        self.schedule = []
+        self.phone = Phone(mitch.searchUser('_PhoneNum', self.custID)[0])
+
+    def getVehicles(self, mitch):
+        self.vehicles = []
+        for vehicle in mitch.searchUser('_Vehicle', self.custID):
             self.vehicles.append(Vehicle(vehicle))
 
-    def getHistory(self, Mitchell):
+    def getHistory(self, mitch):
         self.history = []
-        for hist in Mitchell.searchUser('_History', self.custID):
-            self.history.append(History(hist, Mitchell))
+        for hist in mitch.searchUser('_History', self.custID):
+            self.history.append(History(hist, mitch))
 
-    def getOpenOrders(self, Mitchell):
+    def getOpenOrders(self, mitch):
         self.schedule = []
-        for sched in Mitchell.searchUser('_Schedule', self.custID):
-            self.schedule.append(Schedule(sched, Mitchell))
+        for sched in mitch.searchUser('_Schedule', self.custID):
+            self.schedule.append(Schedule(sched, mitch))
 
 
 class Mitchell(object):
-    dbConnection = None
-    dbCur = None
-    tables = None
-
     def __init__(self, sqlitepath):
         self.dbConnection = sqlite3.connect(sqlitepath)
         self.dbCur = self.dbConnection.cursor()
@@ -509,15 +306,14 @@ class Mitchell(object):
             result.append(row)
         return result
 
-    def getSchedule(self, Mitchell):
+    def getSchedule(self, mitch):
         schedule = []
         q = "SELECT * FROM _Status"
         query = self.dbCur.execute(q).fetchall()
         for sched in query:
-            s = Status(sched, Mitchell)
+            s = Status(sched, mitch)
             if s.customer:
                 schedule.append(s)
-                print s.customer.custID
         return schedule
 
     def searchEstimate(self, table, estimateNumber):
@@ -537,23 +333,26 @@ class Mitchell(object):
             result.append(row)
         return result
 
-    def searchPartNumber(self, partNumber, Mitchell):
+    def searchPartNumber(self, partNumber, mitch):
         result = None
-        q = "SELECT * FROM _PartsList WHERE partno_=?"
-        query = self.dbCur.execute(q, (partNumber,)).fetchone()
-        if query:
-            result = Part(query)
+        if partNumber:
+            q = "SELECT * FROM _PartsList WHERE partno_=?"
+            query = self.dbCur.execute(q, (partNumber,)).fetchone()
+            if query:
+                result = Part(query)
+            else:
+                result = mitch.searchAltPartNumber(partNumber, mitch)
+            return result
         else:
-            result = Mitchell.searchAltPartNumber(partNumber, Mitchell)
-        return result
+            return None
 
-    def searchAltPartNumber(self, partNumber, Mitchell):
+    def searchAltPartNumber(self, partNumber, mitch):
         result = None
         q = "SELECT * FROM _Altpartno WHERE alt_partno_=?"
-        query = self.dbCur.execute(q, (partNumber)).fetchone()
+        query = self.dbCur.execute(q, (partNumber,)).fetchone()
         if query:
             altpart = AltPartNo(query)
-            result = Mitchell.searchUniquePartNumber(altpart.partUnique)
+            result = mitch.searchUniquePartNumber(altpart.partUnique)
             return result
         else:
             return None
@@ -564,6 +363,34 @@ class Mitchell(object):
         query = self.dbCur.execute(q, (partNumber,)).fetchone()
         if query:
             result = Part(query)
+            return result
+        else:
+            return None
+
+    def searchTechNumber(self, techNumber):
+        result = None
+        q = "SELECT * FROM _Technician WHERE TechNum_=?"
+        query = self.dbCur.execute(q, (techNumber,)).fetchone()
+        if query:
+            result = Technician(query)
+            return result
+        else:
+            return None
+
+    def searchVendorName(self, search):
+        result = []
+        q = "SELECT * FROM _Vendors WHERE name_ LIKE ('%' || ? || '%')"
+        query = self.dbCur.execute(q, (search,))
+        for row in query:
+            result.append(Vendor(row))
+        return result
+
+    def searchVehicle(self, vehicleID):
+        result = None
+        q = "SELECT * FROM _Vehicle WHERE Vehicle_ID_=?"
+        query = self.dbCur.execute(q, (vehicleID,)).fetchone()
+        if query:
+            result = Vehicle(query)
             return result
         else:
             return None

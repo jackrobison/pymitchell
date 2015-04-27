@@ -1,3 +1,2 @@
 from pymitchell import Mitchell, AccountClass, AltPartNo, Order, Vehicle, \
-    History, Schedule, Manufacturer, Part, Phone, Status, Technician, \
-    Vendors, Customer
+    History, Schedule, Part, Phone, Status, Technician, Vendor, Customer
