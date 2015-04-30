@@ -6,7 +6,7 @@
 #  into easier to use objects
 #
 #  pymitchell uses a sqlite database which is made from the original
-#  SMCORE32.mdb database mitchell uses.
+#  SMCORE32.mdb database that mitchell uses.
 #
 #  The table names in sqlite database have a preceding '_' before them, this
 #  was done because sqlite didn't like  some of the original names. The key
@@ -57,8 +57,8 @@ class Order(object):
         self.mfgCode = row[51]
         self.partUnique = row[52]
         self.hoursCharged = row[55]
-        self.part = mitch.searchPartNumber(self.partNumber, mitch)
-        self.tech = mitch.searchTechNumber(self.techNumber)
+        self.part = mitch.search_part_number(self.partNumber, mitch)
+        self.tech = mitch.search_tech_number(self.techNumber)
 
 
 class Vehicle(object):
@@ -95,7 +95,6 @@ class History(object):
         self.hazwasteAmount = row[27]
         self.location = row[29]
         self.timeIn = row[30]
-        self.yearMakeModel = row[31]
         self.estimateNumber = row[33]
         self.status = row[34]
         self.balanceDue = row[35]
@@ -110,18 +109,19 @@ class History(object):
         self.odometerOut = row[49]
         self.vehicleID = row[50]
         self.defaultTechParts = row[51]
-        self.license = row[52]
         self.printedDate = row[55]
         self.estimateHazmat = row[56]
         self.estPartsAmount = row[58]
         self.timeOut = row[59]
         self.estimateHours = row[63]
-        self.vehicle = mitch.searchVehicle(self.vehicleID)
+        self.vehicle = mitch.search_vehicle(self.vehicleID)
         self.orders = []
-        self.tech = mitch.searchTechNumber(self.defaultTech)
-        getOrders = mitch.searchEstimate('_OrderList', self.estimateNumber)
-        for order in getOrders:
-            self.orders.append(Order(order, mitch))
+        self.tech = mitch.search_tech_number(self.defaultTech)
+        getOrders = mitch.search_estimate('_OrderList', self.estimateNumber)
+        self.orders = [Order(order, mitch) for order in getOrders]
+        custrows = mitch.search_user('_Customers', self.custID)
+        if custrows:
+            self.customer = Customer(custrows[0], mitch)
 
 
 class Schedule(object):
@@ -129,7 +129,6 @@ class Schedule(object):
         self.sched = row[2]
         self.notes = row[4]
         self.datePosted = row[5]
-        self.custName = row[6]
         self.custID = row[7]
         self.recordNumber = row[9]
         self.estimateNumber = row[10]
@@ -139,10 +138,11 @@ class Schedule(object):
         self.estLaborHours = row[8]
         self.recordNumber = row[9]
         self.keyUnique = row[11]
-        self.orders = []
-        getOrders = mitch.searchEstimate('_OrderList', self.estimateNumber)
-        for order in getOrders:
-            self.orders.append(Order(order, mitch))
+        getOrders = mitch.search_estimate('_OrderList', self.estimateNumber)
+        self.orders = [Order(order, mitch) for order in getOrders]
+        custrows = mitch.search_user('_Customers', self.custID)
+        if custrows:
+            self.customer = Customer(custrows[0], mitch)
 
 
 class Part(object):
@@ -164,7 +164,6 @@ class Part(object):
 class Phone(object):
     def __init__(self, row):
         self.phoneNumber = row[0]
-        self.custID = row[2]
         self.extensionNumber = row[3]
 
 
@@ -182,7 +181,6 @@ class Status(object):
         self.laborAmount = row[23]
         self.odometerIn = row[24]
         self.datePosted = row[25]
-        self.custName = row[26]
         self.hazwasteAmount = row[27]
         self.location = row[29]
         self.timeIn = row[30]
@@ -206,9 +204,9 @@ class Status(object):
         self.estPartsAmount = row[58]
         self.timeOut = row[59]
         self.estimateHours = row[63]
-        self.tech = mitch.searchTechNumber(self.defaultTech)
-        self.vehicle = mitch.searchVehicle(self.vehicleID)
-        custrows = mitch.searchUser('_Customers', self.custID)
+        self.tech = mitch.search_tech_number(self.defaultTech)
+        self.vehicle = mitch.search_vehicle(self.vehicleID)
+        custrows = mitch.search_user('_Customers', self.custID)
         if custrows:
             self.customer = Customer(custrows[0], mitch)
         else:
@@ -261,39 +259,86 @@ class Customer(object):
         self.vehicles = []
         self.history = []
         self.schedule = []
-        self.phone = Phone(mitch.searchUser('_PhoneNum', self.custID)[0])
+        self.phone = Phone(mitch.search_user('_PhoneNum', self.custID)[0])
 
-    def getVehicles(self, mitch):
-        self.vehicles = []
-        for vehicle in mitch.searchUser('_Vehicle', self.custID):
-            self.vehicles.append(Vehicle(vehicle))
+    #get all vehicles belonging to the customer
+    def get_vehicles(self, mitch):
+        self.vehicles = [Vehicle(vehicle) for vehicle in mitch.search_user('_Vehicle', self.custID)]
 
-    def getHistory(self, mitch):
-        self.history = []
-        for hist in mitch.searchUser('_History', self.custID):
-            self.history.append(History(hist, mitch))
+    #get past orders from the customer
+    def get_history(self, mitch):
+        self.history = [History(hist, mitch) for hist in mitch.search_user('_History', self.custID)]
 
-    def getOpenOrders(self, mitch):
-        self.schedule = []
-        for sched in mitch.searchUser('_Schedule', self.custID):
-            self.schedule.append(Schedule(sched, mitch))
+    #get presently open orders for the customer
+    def get_open_orders(self, mitch):
+        self.schedule = [Schedule(sched, mitch) for sched in mitch.search_user('_Schedule', self.custID)]
+
+    #search customer orders for a part number
+    def search_cust_part_number(self, partNumber, mitch):
+        if self.history == []:
+            self.get_history(mitch)
+        if self.schedule == []:
+            self.get_open_orders(mitch)
+        result = []
+        for hist in self.history:
+            for order in hist.orders:
+                if (partNumber.lower() in order.partNumber.lower()):
+                    result.append(order)
+                else:
+                    if order.part:
+                        if (partNumber.lower() in order.part.partNumber.lower()):
+                            result.append(order)
+        for sched in self.schedule:
+            for order in sched.orders:
+                if (partNumber.lower() in order.partNumber.lower()):
+                    result.append(order)
+                else:
+                    if order.part:
+                        if (partNumber.lower() in order.part.partNumber.lower()):
+                            result.append(order)
+        return result
+
+    #search customer orders for a part description
+    def search_cust_part_description(self, description, mitch):
+        if self.history == []:
+            self.get_history(mitch)
+        if self.schedule == []:
+            self.get_open_orders(mitch)
+        result = []
+        for hist in self.history:
+            for order in hist.orders:
+                if (description.lower() in order.description.lower()):
+                    result.append(order)
+                else:
+                    if order.part:
+                        if (description.lower() in order.part.description.lower()):
+                            result.append(order)
+        for sched in self.schedule:
+            for order in sched.orders:
+                if (description.lower() in order.description.lower()):
+                    result.append(order)
+                else:
+                    if order.part:
+                        if (description.lower() in order.part.description.lower()):
+                            result.append(order)
+        return result
 
 
 class Mitchell(object):
     def __init__(self, sqlitepath):
         self.dbConnection = sqlite3.connect(sqlitepath)
         self.dbCur = self.dbConnection.cursor()
-        self.tables = self.getTables()
+        self.tables = self.get_tables()
 
-    def getTables(self):
+    #get all the table names in the sqlite db
+    def get_tables(self):
         q = "SELECT name FROM sqlite_master WHERE type = 'table'"
-        getTables = self.dbCur.execute(q)
-        tables = []
-        for i in getTables:
-            tables.append(str(i)[3:][:-3])
+        get_tables = self.dbCur.execute(q)
+        tables = [str(i)[3:][:-3] for i in get_tables]
         return tables
 
-    def searchUser(self, table, user):
+    #search for rows containing a customer id in a given table
+    def search_user(self, table, user):
         result = []
         key = {
             '_Vehicle': 'Cust_ID_', '_Customers': 'cust_id_',
@@ -302,11 +347,11 @@ class Mitchell(object):
         }
         q = "SELECT * FROM "+table+" WHERE "+key[table]+"=?"
         query = self.dbCur.execute(q, (user,))
-        for row in query:
-            result.append(row)
+        result = [row for row in query]
         return result
 
-    def getSchedule(self, mitch):
+    #get the current scheduled jobs, returns a list of status objects
+    def get_schedule(self, mitch):
         schedule = []
         q = "SELECT * FROM _Status"
         query = self.dbCur.execute(q).fetchall()
@@ -316,24 +361,40 @@ class Mitchell(object):
                 schedule.append(s)
         return schedule
 
-    def searchEstimate(self, table, estimateNumber):
+    #search for an estimate number in a table
+    def search_estimate(self, table, estimateNumber):
         result = []
-        key = {'_History': 'lineno_', '_OrderList': 'workid_'}
+        key = {
+            '_History': 'lineno_', '_OrderList': 'workid_',
+            '_Status': 'lineno_', '_Schedule': 'lineno_'
+        }
         q = "SELECT * FROM "+table+" WHERE "+key[table]+"=?"
         query = self.dbCur.execute(q, (estimateNumber,))
-        for row in query:
-            result.append(row)
+        result = [row for row in query]
         return result
 
-    def searchLastName(self, name):
+    #search for a record number in a table
+    def search_record(self, table, recordNumber):
+        result = []
+        key = {
+            '_History': 'recno_', '_Status': 'recno_',
+            '_Schedule': 'recno_'
+        }
+        q = "SELECT * FROM "+table+" WHERE "+key[table]+"=?"
+        query = self.dbCur.execute(q, (recordNumber,))
+        result = [row for row in query]
+        return result
+
+    #get customer table rows containing last names similar to the search
+    def search_last_name(self, name):
         result = []
         q = "SELECT * FROM _Customers WHERE lastname_ LIKE ?"
         query = self.dbCur.execute(q, (name,))
-        for row in query:
-            result.append(row)
+        result = [row for row in query]
         return result
 
-    def searchPartNumber(self, partNumber, mitch):
+    #search for a part number in the inventory parts list
+    def search_part_number(self, partNumber, mitch):
         result = None
         if partNumber:
             q = "SELECT * FROM _PartsList WHERE partno_=?"
@@ -341,23 +402,25 @@ class Mitchell(object):
             if query:
                 result = Part(query)
             else:
-                result = mitch.searchAltPartNumber(partNumber, mitch)
+                result = mitch.search_alt_part_number(partNumber, mitch)
             return result
         else:
             return None
 
-    def searchAltPartNumber(self, partNumber, mitch):
+    #if the previous part search failed, see if the part has a unique ID
+    def search_alt_part_number(self, partNumber, mitch):
         result = None
         q = "SELECT * FROM _Altpartno WHERE alt_partno_=?"
         query = self.dbCur.execute(q, (partNumber,)).fetchone()
         if query:
             altpart = AltPartNo(query)
-            result = mitch.searchUniquePartNumber(altpart.partUnique)
+            result = mitch.search_unique_part_number(altpart.partUnique)
             return result
         else:
             return None
 
-    def searchUniquePartNumber(self, partNumber):
+    #search for a part in inventory based on unique ID
+    def search_unique_part_number(self, partNumber):
         result = None
         q = "SELECT * FROM _PartsList WHERE part_unique_=?"
         query = self.dbCur.execute(q, (partNumber,)).fetchone()
@@ -367,7 +430,8 @@ class Mitchell(object):
         else:
             return None
 
-    def searchTechNumber(self, techNumber):
+    #get a technician object from a tech id
+    def search_tech_number(self, techNumber):
         result = None
         q = "SELECT * FROM _Technician WHERE TechNum_=?"
         query = self.dbCur.execute(q, (techNumber,)).fetchone()
@@ -377,15 +441,17 @@ class Mitchell(object):
         else:
             return None
 
-    def searchVendorName(self, search):
+    #search the vendor list
+    def search_vendor_name(self, search):
         result = []
         q = "SELECT * FROM _Vendors WHERE name_ LIKE ('%' || ? || '%')"
         query = self.dbCur.execute(q, (search,))
-        for row in query:
-            result.append(Vendor(row))
+        if query:
+            result = [Vendor(row) for row in query]
         return result
 
-    def searchVehicle(self, vehicleID):
+    #get a vehicle object from a vehicle id
+    def search_vehicle(self, vehicleID):
         result = None
         q = "SELECT * FROM _Vehicle WHERE Vehicle_ID_=?"
         query = self.dbCur.execute(q, (vehicleID,)).fetchone()
@@ -394,6 +460,30 @@ class Mitchell(object):
             return result
         else:
             return None
+
+    #convert an estimate number into a record number
+    def est_number_to_rec_number(self, estimateNumber, mitch):
+        hist = mitch.search_estimate('_History', estimateNumber)
+        if hist != []:
+            return History(hist[0], mitch).recordNumber
+        stat = mitch.search_estimate('_Status', estimateNumber)
+        if stat != []:
+            return Status(stat[0], mitch).recordNumber
+        sched = mitch.search_estimate('_Schedule', estimateNumber)
+        if sched != []:
+            return Schedule(Schedule[0], mitch).recordNumber
+
+    #convert a record number into an estimate number
+    def rec_number_to_est_number(self, recordNumber, mitch):
+        hist = mitch.search_record('_History', recordNumber)
+        if hist != []:
+            return History(hist[0], mitch).estimateNumber
+        stat = mitch.search_record('_Status', recordNumber)
+        if stat != []:
+            return Status(stat[0], mitch).estimateNumber
+        sched = mitch.search_record('_Schedule', recordNumber)
+        if sched != []:
+            return Schedule(Schedule[0], mitch).estimateNumber
 
     def __del__(self):
         self.dbConnection.close()
