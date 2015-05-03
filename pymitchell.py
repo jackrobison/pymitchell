@@ -263,15 +263,18 @@ class Customer(object):
 
     #get all vehicles belonging to the customer
     def get_vehicles(self, mitch):
-        self.vehicles = [Vehicle(vehicle) for vehicle in mitch.search_user('_Vehicle', self.custID)]
+        vehicleSearch = mitch.search_user('_Vehicle', self.custID)
+        self.vehicles = [Vehicle(vehicle) for vehicle in vehicleSearch]
 
     #get past orders from the customer
     def get_history(self, mitch):
-        self.history = [History(hist, mitch) for hist in mitch.search_user('_History', self.custID)]
+        historySearch = mitch.search_user('_History', self.custID)
+        self.history = [History(hist, mitch) for hist in historySearch]
 
     #get presently open orders for the customer
     def get_open_orders(self, mitch):
-        self.schedule = [Schedule(sched, mitch) for sched in mitch.search_user('_Schedule', self.custID)]
+        orderSearch = mitch.search_user('_Schedule', self.custID)
+        self.schedule = [Schedule(sched, mitch) for sched in orderSearch]
 
     #search customer orders for a part number
     def search_cust_part_number(self, partNumber, mitch):
@@ -391,6 +394,15 @@ class Mitchell(object):
         q = "SELECT * FROM _Customers WHERE lastname_ LIKE ?"
         query = self.dbCur.execute(q, (name,))
         result = [row for row in query]
+        return result
+
+    #search for a part in the inventory list by description
+    def search_part_description(self, search):
+        result = []
+        q = "SELECT * FROM _PartsList WHERE description_ LIKE ('%' || ? || '%')"
+        query = self.dbCur.execute(q, (search,))
+        if query:
+            result = [Part(row) for row in query]
         return result
 
     #search for a part number in the inventory parts list
